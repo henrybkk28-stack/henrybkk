@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Toofood — Interactive Prototype</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;scrollbar-width:none;-ms-overflow-style:none}
+  *::-webkit-scrollbar{display:none}
+  body{background:#1a1a1a;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px 20px}
+  .phone-shell{width:375px;background:#111;border-radius:50px;padding:14px;border:1px solid #333;position:relative;box-shadow:0 0 0 1px #222,0 40px 80px rgba(0,0,0,0.8)}
+  .btn-left-1{position:absolute;width:4px;height:32px;left:-5px;top:120px;background:#222;border-radius:3px}
+  .btn-left-2{position:absolute;width:4px;height:56px;left:-5px;top:170px;background:#222;border-radius:3px}
+  .btn-left-3{position:absolute;width:4px;height:56px;left:-5px;top:240px;background:#222;border-radius:3px}
+  .btn-right{position:absolute;width:4px;height:80px;right:-5px;top:180px;background:#222;border-radius:3px}
+  .screen-bezel{background:#000;border-radius:40px;overflow:hidden;position:relative;height:720px}
+  .dynamic-island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:120px;height:34px;background:#000;border-radius:20px;z-index:200;display:flex;align-items:center;justify-content:center;gap:14px}
+  .camera-dot{width:10px;height:10px;border-radius:50%;background:#1a1a1a;border:1.5px solid #222}
+  .camera-dot.main{width:12px;height:12px}
+  .status-bar{position:absolute;top:0;left:0;right:0;height:54px;display:flex;align-items:center;justify-content:space-between;padding:4px 28px 0;z-index:199;font-size:13px;font-weight:600;pointer-events:none}
+  .status-time{font-size:15px;font-weight:700}
+  .status-icons{display:flex;align-items:center;gap:6px}
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+  .screen.active{display:flex}
+  .home-indicator{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:130px;height:5px;border-radius:3px;z-index:200;pointer-events:none}
+  .phone-label{text-align:center;margin-top:24px;color:#555;font-size:13px}
+  .phone-label span{color:#D85A30;font-weight:600}
+
+  /* ── SHARED NAV ── */
+  .bottom-nav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:10px 0 20px;z-index:100;border-top:0.5px solid rgba(255,255,255,0.08);background:#000}
+  .nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:rgba(255,255,255,0.4);cursor:pointer;-webkit-tap-highlight-color:transparent;min-width:0;flex:1}
+  .nav-item.active{color:#fff}
+  .post-btn{width:42px;height:28px;background:#378ADD;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  #feed{background:#000}
+  .feed-scroll{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;height:0}
+  .feed-scroll::-webkit-scrollbar{display:none}
+  .review-screen{width:100%;height:100%;scroll-snap-align:start;position:relative;background:#111;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;min-height:100%}
+  .food-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:#111}
+  .food-bg svg{opacity:0.12}
+  .food-bg span{font-size:13px;color:#555}
+  .dark-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.3) 0%,rgba(0,0,0,0) 25%,rgba(0,0,0,0) 50%,rgba(0,0,0,0.7) 100%)}
+  .feed-topbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:56px 18px 12px;z-index:10}
+  .feed-logo{color:#fff;font-weight:700;font-size:18px;letter-spacing:-0.5px}
+  .feed-tabs{display:flex;gap:16px}
+  .feed-tab{font-size:12px;color:rgba(255,255,255,0.45);cursor:pointer;padding-bottom:2px;border-bottom:2px solid transparent}
+  .feed-tab.active{color:#fff;font-weight:600;border-bottom:2px solid #fff}
+  .r-actions{position:absolute;right:12px;bottom:90px;display:flex;flex-direction:column;align-items:center;gap:16px;z-index:10}
+  .r-action{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+  .r-btn{width:36px;height:36px;border-radius:50%;background:transparent;display:flex;align-items:center;justify-content:center}
+  .r-label{font-size:10px;color:rgba(255,255,255,0.7)}
+  .heart-path{fill:none;stroke:#fff;stroke-width:2;stroke-linejoin:round;transition:all 0.2s}
+  .save-path{fill:none;stroke:#fff;stroke-width:2;stroke-linejoin:round;transition:all 0.2s}
+  .bottom-overlay{position:absolute;bottom:62px;left:0;right:58px;padding:0 16px 12px;z-index:10}
+  .urow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .uavatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;flex-shrink:0}
+  .uname{font-size:13px;font-weight:700;color:#fff}
+  .follow-pill{font-size:10px;color:#378ADD;border:1.5px solid #378ADD;border-radius:20px;padding:2px 10px;background:rgba(0,0,0,0.4);cursor:pointer;margin-left:6px}
+  .place-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:11px;padding:4px 10px;border-radius:20px;margin-bottom:7px;cursor:pointer}
+  .rev-stars{color:#f5c518;font-size:14px;margin-bottom:5px}
+  .rev-stars span{font-size:11px;color:rgba(255,255,255,0.45);margin-left:3px}
+  .rev-text{font-size:12px;color:rgba(255,255,255,0.9);line-height:1.5;margin-bottom:5px}
+  .hashtags{font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:5px}
+  .swipe-hint{font-size:10px;color:rgba(255,255,255,0.28);display:flex;align-items:center;gap:3px}
+
+  /* ── SEARCH ── */
+  #search{background:#000}
+  .search-topbar{padding:56px 16px 10px;border-bottom:0.5px solid #222;flex-shrink:0}
+  .search-row{display:flex;align-items:center;gap:8px;background:#1a1a1a;border-radius:12px;padding:8px 12px}
+  .search-row input{border:none;background:transparent;font-size:13px;color:#fff;flex:1;outline:none}
+  .search-row input::placeholder{color:#555}
+  .section-label{font-size:11px;font-weight:600;color:#555;letter-spacing:0.4px;text-transform:uppercase;padding:10px 16px 6px}
+  .trending-row{display:flex;gap:6px;overflow-x:auto;padding:0 16px 10px}
+  .trending-row::-webkit-scrollbar{display:none}
+  .trend-chip{display:flex;align-items:center;gap:5px;background:#1a1a1a;border-radius:20px;padding:5px 10px;font-size:11px;color:#aaa;white-space:nowrap;flex-shrink:0;cursor:pointer;border:0.5px solid #333}
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:70px}
+  .grid-cell{aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden}
+  .grid-cell svg{opacity:0.2}
+  .grid-cell.tall{grid-row:span 2}
+  .search-body{flex:1;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+  .search-body::-webkit-scrollbar{display:none}
+  .search-cancel{font-size:13px;color:#D85A30;cursor:pointer;padding-left:10px;white-space:nowrap;display:none}
+
+
+  /* ── MESSAGES ── */
+  #messages{background:#000;overflow:hidden}
+  .msg-topbar{padding:56px 16px 10px;border-bottom:0.5px solid #222;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:#000}
+  .msg-title{font-size:17px;font-weight:700;color:#fff}
+  .msg-search{display:flex;align-items:center;gap:8px;background:#1a1a1a;border-radius:10px;padding:7px 12px;margin:8px 16px 0;flex-shrink:0}
+  .msg-search input{border:none;background:transparent;font-size:13px;color:#fff;flex:1;outline:none}
+  .msg-search input::placeholder{color:#444}
+  .stories-row{display:flex;gap:12px;padding:10px 16px;overflow-x:auto;border-bottom:0.5px solid #222;flex-shrink:0;background:#000}
+  .stories-row::-webkit-scrollbar{display:none}
+  .story{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;cursor:pointer}
+  .story-ring{width:46px;height:46px;border-radius:50%;border:2px solid #378ADD;display:flex;align-items:center;justify-content:center}
+  .story-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .story-name{font-size:10px;color:#555;text-align:center;max-width:46px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .threads{flex:1;overflow-y:auto;background:#000;scrollbar-width:none;-ms-overflow-style:none}
+  .threads::-webkit-scrollbar{display:none}
+  .thread{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:0.5px solid #1a1a1a;cursor:pointer}
+  .t-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;position:relative}
+  .online-dot{position:absolute;bottom:1px;right:1px;width:11px;height:11px;border-radius:50%;background:#3B6D11;border:2px solid #000}
+  .t-info{flex:1;min-width:0}
+  .t-name{font-size:14px;font-weight:600;color:#fff;margin-bottom:2px}
+  .t-preview{font-size:12px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .t-preview.unread{color:#ccc;font-weight:500}
+  .t-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+  .t-time{font-size:11px;color:#444}
+  .badge{width:20px;height:20px;background:#378ADD;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700}
+
+  /* ── CHAT ── */
+  #chat{background:#000}
+  .chat-topbar{padding:56px 16px 10px;border-bottom:0.5px solid #222;display:flex;align-items:center;gap:10px;flex-shrink:0;background:#000}
+  .back-btn{width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+  .chat-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+  .chat-name{font-size:14px;font-weight:700;color:#fff}
+  .chat-status{font-size:11px;color:#3B6D11}
+  .chat-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:#000;scrollbar-width:none;-ms-overflow-style:none}
+  .chat-msgs::-webkit-scrollbar{display:none}
+  .msg{max-width:75%;padding:9px 13px;border-radius:18px;font-size:13px;line-height:1.5}
+  .msg.them{background:#1a1a1a;color:#fff;border-bottom-left-radius:4px;align-self:flex-start}
+  .msg.me{background:#D85A30;color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+  .msg-time{font-size:10px;color:#444;margin-top:2px}
+  .msg-time.r{text-align:right}
+  .ts{align-self:center;font-size:10px;color:#444;margin:4px 0}
+  .share-card{background:#1a1a1a;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;max-width:80%;align-self:flex-start;cursor:pointer;border:0.5px solid #333}
+  .card-img{width:40px;height:40px;border-radius:8px;background:#222;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .card-name{font-size:12px;font-weight:600;color:#fff}
+  .card-sub{font-size:11px;color:#D85A30}
+  .chat-input-row{padding:10px 16px 24px;border-top:0.5px solid #222;display:flex;align-items:center;gap:10px;flex-shrink:0;background:#000}
+  .chat-input{flex:1;background:#1a1a1a;border:none;border-radius:22px;padding:9px 14px;font-size:13px;color:#fff;outline:none}
+  .chat-input::placeholder{color:#444}
+  .send-btn{width:36px;height:36px;background:#D85A30;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+
+  /* ── PROFILE ── */
+  #profile{background:#fff}
+  .profile-scroll{flex:1;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+  .profile-scroll::-webkit-scrollbar{display:none}
+  .profile-topbar{padding:56px 16px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .profile-username{font-size:16px;font-weight:700;color:#1a1a1a}
+  .profile-header{padding:0 16px 12px;display:flex;align-items:center;gap:16px}
+  .profile-pic{width:76px;height:76px;border-radius:50%;background:#9FE1CB;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#085041;border:3px solid #D85A30;flex-shrink:0}
+  .profile-stats{display:flex;flex:1}
+  .stat{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .stat-num{font-size:17px;font-weight:700;color:#1a1a1a}
+  .stat-label{font-size:11px;color:#888}
+  .profile-info{padding:0 16px 10px}
+  .profile-fullname{font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:3px}
+  .profile-bio{font-size:12px;color:#555;line-height:1.5;margin-bottom:5px}
+  .profile-loc{display:flex;align-items:center;gap:4px;font-size:11px;color:#888}
+  .profile-actions{display:flex;gap:8px;padding:0 16px 10px}
+  .edit-btn{flex:1;padding:8px 0;background:#f5f5f5;border:none;border-radius:10px;font-size:13px;font-weight:600;color:#1a1a1a;cursor:pointer}
+  .highlights{display:flex;gap:12px;padding:0 16px 10px;overflow-x:auto}
+  .highlights::-webkit-scrollbar{display:none}
+  .highlight{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;cursor:pointer}
+  .h-ring{width:52px;height:52px;border-radius:50%;border:1.5px solid #eee;display:flex;align-items:center;justify-content:center;background:#f8f8f8}
+  .h-label{font-size:10px;color:#666;text-align:center}
+  .tabs-row{display:flex;border-bottom:0.5px solid #eee;border-top:0.5px solid #eee}
+  .ptab{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 0;cursor:pointer;opacity:0.35;border-bottom:2px solid transparent}
+  .ptab.active{opacity:1;border-bottom:2px solid #1a1a1a}
+  .p-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:80px}
+  .p-cell{aspect-ratio:1;background:#e8e8e8;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .p-cell svg{opacity:0.2}
+  .p-cell.tall{grid-row:span 2}
+
+
+  /* ── CAMERA ── */
+  #camera{background:#000}
+  .cam-bg{position:absolute;inset:0;background:#1a1a1a;display:flex;align-items:center;justify-content:center}
+  .cam-bg svg{opacity:0.06}
+  .cam-top{position:absolute;top:0;left:0;right:0;padding:56px 18px 12px;display:flex;align-items:center;justify-content:space-between;z-index:10}
+  .cam-close-btn{width:30px;height:30px;background:rgba(0,0,0,0.45);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .cam-title{font-size:15px;font-weight:700;color:#fff}
+  .cam-bottom-wrap{position:absolute;bottom:0;left:0;right:0;padding-bottom:32px;z-index:10;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .cam-controls{width:100%;padding:0 28px;display:flex;align-items:center;justify-content:center;position:relative}
+  .gallery-thumb{width:36px;height:36px;border-radius:8px;background:#333;border:1.5px solid rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;cursor:pointer;position:absolute;left:28px;top:50%;transform:translateY(-50%)}
+  .flip-btn-cam{width:36px;height:36px;background:rgba(0,0,0,0.45);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;position:absolute;right:28px;top:50%;transform:translateY(-50%)}
+  .center-col{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .cam-modes{display:flex;gap:0;align-items:center}
+  .cmode{font-size:12px;color:rgba(255,255,255,0.4);cursor:pointer;padding-bottom:2px;border-bottom:2px solid transparent;width:76px;text-align:center}
+  .cmode.active{color:#fff;font-weight:600;border-bottom:2px solid #fff}
+  .shutter{width:56px;height:56px;border-radius:50%;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .shutter-inner{width:45px;height:45px;border-radius:50%;background:#fff}
+
+  /* ── REVIEW FORM ── */
+  #reviewform{background:#fff}
+  .rf-topbar{padding:56px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid #eee;flex-shrink:0}
+  .rf-cancel{font-size:13px;color:#888;cursor:pointer}
+  .rf-title{font-size:15px;font-weight:700;color:#1a1a1a}
+  .rf-post{font-size:13px;font-weight:700;color:#D85A30;cursor:pointer}
+  .rf-preview{height:90px;background:#e8e8e8;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .rf-preview svg{opacity:0.2}
+  .rf-body{flex:1;overflow-y:auto;padding:0 16px;scrollbar-width:none;-ms-overflow-style:none}
+  .rf-body::-webkit-scrollbar{display:none}
+  .rf-section{padding:9px 0;border-bottom:0.5px solid #f0f0f0}
+  .rf-label{font-size:10px;font-weight:600;color:#bbb;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:6px}
+  .rf-rest{display:flex;align-items:center;gap:8px;background:#f8f8f8;border-radius:10px;padding:8px 10px;cursor:pointer}
+  .rf-rest-name{font-size:13px;font-weight:600;color:#1a1a1a}
+  .rf-rest-sub{font-size:10px;color:#888}
+  .star-row{display:flex;gap:4px}
+  .star{font-size:26px;color:#ddd;cursor:pointer;line-height:1}
+  .star.on{color:#f5c518}
+  .rf-input{width:100%;border:none;background:transparent;font-size:13px;color:#333;resize:none;outline:none;font-family:-apple-system,sans-serif;line-height:1.6}
+  .rf-input::placeholder{color:#bbb}
+  .tags-wrap{display:flex;gap:5px;flex-wrap:wrap;padding:2px 0}
+  .tag{font-size:11px;padding:4px 9px;border-radius:20px;border:0.5px solid #ddd;color:#666;cursor:pointer}
+  .tag.on{background:#FAECE7;border-color:#D85A30;color:#993C1D}
+  .rf-submit{margin:12px 0 16px;width:100%;padding:12px;background:#D85A30;border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+
+  /* ── RESTAURANT ── */
+  #restaurant{background:#000;overflow:hidden}
+  .rest-scroll{flex:1;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;background:#000}
+  .rest-scroll::-webkit-scrollbar{display:none}
+  .rest-hero{width:100%;height:200px;background:#1a1a1a;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .rest-hero svg{opacity:0.15}
+  .rest-hero-btns{position:absolute;top:56px;left:14px;right:14px;display:flex;justify-content:space-between}
+  .rest-hero-btn{width:36px;height:36px;background:rgba(0,0,0,0.55);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:0.5px solid rgba(255,255,255,0.15)}
+  .photo-count{position:absolute;bottom:10px;right:14px;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;padding:3px 8px;border-radius:10px}
+  .rest-info{padding:14px 16px 0}
+  .rest-name-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:3px}
+  .rest-name{font-size:18px;font-weight:700;color:#fff}
+  .open-badge{font-size:10px;background:#0F6E56;color:#9FE1CB;padding:3px 8px;border-radius:10px;font-weight:600;margin-top:4px}
+  .rest-meta{font-size:12px;color:#666;margin-bottom:8px}
+  .rest-rating{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+  .rest-stars{color:#f5c518;font-size:15px}
+  .rest-rating-num{font-size:15px;font-weight:700;color:#fff}
+  .rest-rating-count{font-size:11px;color:#555}
+  .rest-pills{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .rest-pill{display:flex;align-items:center;gap:4px;background:#1a1a1a;border-radius:20px;padding:5px 10px;font-size:11px;color:#888}
+  .rest-actions{display:flex;gap:8px;margin-bottom:14px}
+  .r-act-btn{flex:1;padding:10px 0;border-radius:12px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;border:none}
+  .r-act-primary{background:#378ADD;color:#fff}
+  .r-act-secondary{background:#1a1a1a;color:#fff}
+  .rest-divider{height:6px;background:#111;margin:0 -16px 14px}
+  .rest-section-head{display:flex;align-items:center;justify-content:space-between;padding:0 16px;margin-bottom:10px}
+  .rest-section-title{font-size:14px;font-weight:700;color:#fff}
+  .see-all{font-size:11px;color:#378ADD;cursor:pointer}
+  .photo-strip{display:flex;gap:6px;padding:0 16px 14px;overflow-x:auto}
+  .photo-strip::-webkit-scrollbar{display:none}
+  .photo-cell{width:90px;height:90px;background:#1a1a1a;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .photo-cell svg{opacity:0.2}
+  .rev-card{padding:0 16px 12px}
+  .rev-hdr{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .rev-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+  .rev-nm{font-size:13px;font-weight:600;color:#fff}
+  .rev-tm{font-size:10px;color:#555;margin-left:auto}
+  .rev-st{color:#f5c518;font-size:12px;margin-bottom:4px}
+  .rev-tx{font-size:12px;color:#888;line-height:1.5}
+  .rev-img{width:100%;height:80px;background:#1a1a1a;border-radius:8px;margin-top:7px;display:flex;align-items:center;justify-content:center}
+  .rev-img svg{opacity:0.2}
+  .write-rev-btn{margin:4px 16px 14px;width:calc(100% - 32px);padding:11px;background:#000;border:1.5px solid #378ADD;border-radius:20px;color:#378ADD;font-size:13px;font-weight:600;cursor:pointer}
+  .rest-info-section{padding:0 16px 80px}
+  .rest-info-row{display:flex;align-items:center;padding:9px 0;border-bottom:0.5px solid #1a1a1a}
+  .rest-info-row:last-child{border:none}
+  .rest-info-label{font-size:12px;color:#666;flex:1}
+  .rest-info-val{font-size:12px;color:#fff;font-weight:500;text-align:right}
+
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;align-items:center">
+  <div class="phone-shell">
+    <div class="btn-left-1"></div><div class="btn-left-2"></div><div class="btn-left-3"></div><div class="btn-right"></div>
+    <div class="screen-bezel">
+      <div class="dynamic-island"><div class="camera-dot"></div><div class="camera-dot main"></div></div>
+
+      <!-- STATUS BAR -->
+      <div class="status-bar" id="statusBar" style="color:#fff">
+        <span class="status-time">9:41</span>
+        <div class="status-icons">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="6" width="3" height="6" rx="1"/><rect x="4.5" y="4" width="3" height="8" rx="1"/><rect x="9" y="2" width="3" height="10" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity="0.35"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 9.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill="currentColor"/><path d="M3.5 6.5C5 5 6.4 4.2 8 4.2s3 .8 4.5 2.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M1 4C3.2 1.8 5.5.7 8 .7s4.8 1.1 7 3.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="18" height="9" rx="2.5" fill="currentColor"/><path d="M23 4v4a2 2 0 0 0 0-4z" fill="currentColor" opacity="0.4"/></svg>
+        </div>
+      </div>
+
+      <!-- ══ FEED SCREEN ══ -->
+      <div class="screen active" id="feed">
+        <div class="feed-scroll" id="feedScroll">
+          <!-- Review 1 -->
+          <div class="review-screen">
+            <div class="food-bg"><svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>food photo / video</span></div>
+            <div class="dark-overlay"></div>
+            <div class="feed-topbar">
+              <span class="feed-logo">toofood</span>
+            </div>
+            <div class="r-actions">
+              <div class="r-action" onclick="toggleHeart(this,'lc1')"><div class="r-btn"><svg width="24" height="24" viewBox="0 0 24 24"><path class="heart-path" d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z"/></svg></div><span class="r-label" id="lc1" data-count="2100">2.1k</span></div>
+              <div class="r-action"><div class="r-btn"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M21 15C21 15.5 20.79 16.04 20.41 16.41C20.04 16.79 19.53 17 19 17H7L3 21V5C3 4.47 3.21 3.96 3.59 3.59C3.96 3.21 4.47 3 5 3H19C19.53 3 20.04 3.21 20.41 3.59C20.79 3.96 21 4.47 21 5V15Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div><span class="r-label">84</span></div>
+              <div class="r-action"><div class="r-btn"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><polyline points="16 6 12 2 8 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="2" x2="12" y2="15" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div><span class="r-label">share</span></div>
+              <div class="r-action" onclick="toggleSave(this)"><div class="r-btn"><svg width="24" height="24" viewBox="0 0 24 24"><path class="save-path" d="M19 21L12 16L5 21V5C5 4.47 5.21 3.96 5.59 3.59C5.96 3.21 6.47 3 7 3H17C17.53 3 18.04 3.21 18.41 3.59C18.79 3.96 19 4.47 19 5V21Z"/></svg></div><span class="r-label">save</span></div>
+            </div>
+            <div class="bottom-overlay">
+              <div class="urow"><div class="uavatar" style="background:#9FE1CB;color:#085041">JK</div><span class="uname">jenny_eats</span><span class="follow-pill">+ follow</span></div>
+              <div class="place-pill" onclick="goTo('restaurant')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Kedai Makan · Capitol Hill</div>
+              <div class="rev-stars">★★★★★ <span>5.0</span></div>
+              <div class="rev-text">Malaysian fried chicken is unreal. <span style="color:rgba(255,255,255,0.5);cursor:pointer;font-size:11px">see more</span></div>
+              <div class="hashtags">#seattlefood #malaysianeats #toofood</div>
+            </div>
+          </div>
+          <!-- Review 2 -->
+          <div class="review-screen">
+            <div class="food-bg"><svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>food photo / video</span></div>
+            <div class="dark-overlay"></div>
+            <div class="feed-topbar"><span class="feed-logo">toofood</span></div>
+            <div class="r-actions">
+              <div class="r-action" onclick="toggleHeart(this,'lc2')"><div class="r-btn"><svg width="24" height="24" viewBox="0 0 24 24"><path class="heart-path" d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z"/></svg></div><span class="r-label" id="lc2" data-count="890">890</span></div>
+              <div class="r-action"><div class="r-btn"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M21 15C21 15.5 20.79 16.04 20.41 16.41C20.04 16.79 19.53 17 19 17H7L3 21V5C3 4.47 3.21 3.96 3.59 3.59C3.96 3.21 4.47 3 5 3H19C19.53 3 20.04 3.21 20.41 3.59C20.79 3.96 21 4.47 21 5V15Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div><span class="r-label">31</span></div>
+              <div class="r-action"><div class="r-btn"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><polyline points="16 6 12 2 8 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="2" x2="12" y2="15" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div><span class="r-label">share</span></div>
+              <div class="r-action" onclick="toggleSave(this)"><div class="r-btn"><svg width="24" height="24" viewBox="0 0 24 24"><path class="save-path" d="M19 21L12 16L5 21V5C5 4.47 5.21 3.96 5.59 3.59C5.96 3.21 6.47 3 7 3H17C17.53 3 18.04 3.21 18.41 3.59C18.79 3.96 19 4.47 19 5V21Z"/></svg></div><span class="r-label">save</span></div>
+            </div>
+            <div class="bottom-overlay">
+              <div class="urow"><div class="uavatar" style="background:#CECBF6;color:#3C3489">MR</div><span class="uname">marcus_bites</span><span class="follow-pill">+ follow</span></div>
+              <div class="place-pill" onclick="goTo('restaurant')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Banh Mi Mien Trung · ID</div>
+              <div class="rev-stars">★★★★☆ <span>4.0</span></div>
+              <div class="rev-text">$6 banh mi that slaps. <span style="color:rgba(255,255,255,0.5);cursor:pointer;font-size:11px">see more</span></div>
+              <div class="hashtags">#seattlefood #banhmi #toofood</div>
+            </div>
+          </div>
+        </div>
+        <nav class="bottom-nav">
+          <div class="nav-item active" onclick="goTo('feed')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>feed</div>
+          <div class="nav-item" onclick="goTo('search')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>explore</div>
+          <div class="nav-item" onclick="goTo('camera')"><div class="post-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+          <div class="nav-item" onclick="goTo('messages')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>messages</div>
+          <div class="nav-item" onclick="goTo('henrypost')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>profile</div>
+        </nav>
+      </div>
+
+      <!-- ══ SEARCH SCREEN ══ -->
+      <div class="screen" id="search">
+        <div class="search-topbar">
+          <div style="display:flex;align-items:center;gap:0">
+            <div class="search-row" style="flex:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="restaurants, dishes, areas..." id="searchInput" onfocus="searchFocus()" onblur="searchBlur()"/></div>
+            <span class="search-cancel" id="searchCancel" onclick="cancelSearch()">cancel</span>
+          </div>
+        </div>
+        <div class="search-body" id="searchBody">
+          <div class="section-label">trending in seattle</div>
+          <div class="trending-row">
+            <div class="trend-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>ramen</div>
+            <div class="trend-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>banh mi</div>
+            <div class="trend-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>dim sum</div>
+            <div class="trend-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>brunch</div>
+            <div class="trend-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>thai</div>
+          </div>
+          <div class="section-label">explore</div>
+          <div class="photo-grid">
+            <div class="grid-cell tall" onclick="openUserProfile(0)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="grid-cell" onclick="openUserProfile(1)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="grid-cell" onclick="openUserProfile(2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="grid-cell" onclick="openUserProfile(3)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="grid-cell" onclick="openUserProfile(4)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="grid-cell tall" style="background:#1a1a1a" onclick="openUserProfile(0)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="grid-cell" style="background:#1a1a1a" onclick="openUserProfile(1)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="grid-cell" onclick="openUserProfile(2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="grid-cell" onclick="openUserProfile(3)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          </div>
+        </div>
+        <nav class="bottom-nav">
+          <div class="nav-item" onclick="goTo('feed')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>feed</div>
+          <div class="nav-item active" onclick="goTo('search')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>explore</div>
+          <div class="nav-item" onclick="goTo('camera')"><div class="post-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+          <div class="nav-item" onclick="goTo('messages')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>messages</div>
+          <div class="nav-item" onclick="goTo('henrypost')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>profile</div>
+        </nav>
+      </div>
+
+      <!-- ══ MESSAGES SCREEN ══ -->
+      <div class="screen" id="messages">
+        <div class="msg-topbar"><div class="msg-title">messages</div></div>
+        <div class="msg-search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="search messages..."/></div>
+        <div class="stories-row">
+          <div class="story"><div class="story-ring"><div class="story-av" style="background:#9FE1CB;color:#085041">JK</div></div><div class="story-name">jenny</div></div>
+          <div class="story"><div class="story-ring"><div class="story-av" style="background:#CECBF6;color:#3C3489">MR</div></div><div class="story-name">marcus</div></div>
+          <div class="story"><div class="story-ring"><div class="story-av" style="background:#FAC775;color:#633806">AL</div></div><div class="story-name">alicia</div></div>
+          <div class="story"><div class="story-ring" style="border-color:#ddd"><div class="story-av" style="background:#f0f0f0;color:#aaa">+</div></div><div class="story-name">invite</div></div>
+        </div>
+        <div class="threads">
+          <div class="thread" onclick="goTo('chat')">
+            <div class="t-av" style="background:#9FE1CB;color:#085041">JK<div class="online-dot"></div></div>
+            <div class="t-info"><div class="t-name">jenny_eats</div><div class="t-preview unread">omg you HAVE to try this place</div></div>
+            <div class="t-meta"><div class="t-time">2m</div><div class="badge">3</div></div>
+          </div>
+          <div class="thread" onclick="goTo('chat')">
+            <div class="t-av" style="background:#CECBF6;color:#3C3489">MR</div>
+            <div class="t-info"><div class="t-name">marcus_bites</div><div class="t-preview">shared a restaurant with you</div></div>
+            <div class="t-meta"><div class="t-time">1h</div></div>
+          </div>
+          <div class="thread" onclick="goTo('chat')">
+            <div class="t-av" style="background:#FAC775;color:#633806">AL<div class="online-dot"></div></div>
+            <div class="t-info"><div class="t-name">alicia_nomnom</div><div class="t-preview unread">the soba place has a new menu!</div></div>
+            <div class="t-meta"><div class="t-time">3h</div><div class="badge">1</div></div>
+          </div>
+          <div class="thread" onclick="goTo('chat')">
+            <div class="t-av" style="background:#F5C4B3;color:#712B13">SK</div>
+            <div class="t-info"><div class="t-name">seattle_kai</div><div class="t-preview">haha yeah the line was crazy long</div></div>
+            <div class="t-meta"><div class="t-time">1d</div></div>
+          </div>
+        </div>
+        <nav class="bottom-nav">
+          <div class="nav-item" onclick="goTo('feed')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>feed</div>
+          <div class="nav-item" onclick="goTo('search')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>explore</div>
+          <div class="nav-item" onclick="goTo('camera')"><div class="post-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+          <div class="nav-item active" onclick="goTo('messages')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>messages</div>
+          <div class="nav-item" onclick="goTo('henrypost')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>profile</div>
+        </nav>
+      </div>
+
+      <!-- ══ CHAT SCREEN ══ -->
+      <div class="screen" id="chat">
+        <div class="chat-topbar">
+          <div class="back-btn" onclick="goTo('messages')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></div>
+          <div class="chat-av" style="background:#9FE1CB;color:#085041">JK</div>
+          <div><div class="chat-name">jenny_eats</div><div class="chat-status">online now</div></div>
+          <div style="margin-left:auto;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div>
+        </div>
+        <div class="chat-msgs" id="chatMsgs">
+          <div class="ts">today · 2:14pm</div>
+          <div><div class="msg them">yo have you been to Kedai Makan yet?</div><div class="msg-time">2:14pm</div></div>
+          <div style="align-self:flex-end"><div class="msg me">no not yet! is it good?</div><div class="msg-time r">2:15pm</div></div>
+          <div><div class="msg them">omg you HAVE to go. the fried chicken is unreal</div><div class="msg-time">2:16pm</div></div>
+          <div class="share-card" onclick="goTo('restaurant')">
+            <div class="card-img"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div><div class="card-name">Kedai Makan</div><div class="card-sub">★★★★★ · Capitol Hill</div></div>
+          </div>
+          <div class="msg-time">2:16pm</div>
+          <div style="align-self:flex-end"><div class="msg me">adding to my list rn!</div><div class="msg-time r">2:17pm</div></div>
+        </div>
+        <div class="chat-input-row">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <input class="chat-input" type="text" placeholder="message..." id="chatInput"/>
+          <div class="send-btn" onclick="sendMsg()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
+        </div>
+      </div>
+
+
+      <!-- ══ CAMERA SCREEN ══ -->
+      <div class="screen" id="camera">
+        <div class="cam-bg"><svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="0.4"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        <div class="cam-top">
+          <div class="cam-close-btn" onclick="goTo('feed')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+          <span class="cam-title">toofood</span>
+          <div style="width:30px"></div>
+        </div>
+        <div class="cam-bottom-wrap">
+          <div class="cam-controls">
+            <div class="gallery-thumb" onclick="goTo('reviewform')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="center-col">
+              <div class="cam-modes">
+                <span class="cmode" onclick="setCMode(this)">photo</span>
+                <span class="cmode active" onclick="setCMode(this)">video</span>
+                <span class="cmode" onclick="setCMode(this)">boomerang</span>
+              </div>
+              <div class="shutter" onclick="goTo('reviewform')"><div class="shutter-inner"></div></div>
+            </div>
+            <div class="flip-btn-cam"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><polyline points="17 4 20 7 17 10"/><polyline points="8 14 5 17 8 20"/></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ REVIEW FORM SCREEN ══ -->
+      <div class="screen" id="reviewform" style="background:#000;overflow:hidden">
+        <div class="rf-topbar" style="background:#000;border-bottom:0.5px solid #222">
+          <span class="rf-cancel" style="color:#888" onclick="goTo('restaurant')">cancel</span>
+          <span class="rf-title" style="color:#fff">write a review</span>
+          <span class="rf-post" style="color:#378ADD" onclick="goTo('feed')">post</span>
+        </div>
+        <div style="flex:1;overflow-y:auto;scrollbar-width:none;background:#000">
+          <div style="padding:12px 16px;border-bottom:0.5px solid #222;display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#fff">Kedai Makan</div>
+              <div style="font-size:11px;color:#555">Capitol Hill · Malaysian</div>
+            </div>
+          </div>
+          <div style="padding:14px 16px;border-bottom:0.5px solid #222">
+            <div style="font-size:10px;font-weight:600;color:#555;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:10px">your rating</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px" id="rfStars">
+              <span class="star on" data-v="1" style="font-size:28px;cursor:pointer;color:#ff3b5c" onclick="setHeartRating(1)">♥</span>
+              <span class="star on" data-v="2" style="font-size:28px;cursor:pointer;color:#ff3b5c" onclick="setHeartRating(2)">♥</span>
+              <span class="star on" data-v="3" style="font-size:28px;cursor:pointer;color:#ff3b5c" onclick="setHeartRating(3)">♥</span>
+              <span class="star on" data-v="4" style="font-size:28px;cursor:pointer;color:#ff3b5c" onclick="setHeartRating(4)">♥</span>
+              <span class="star" data-v="5" style="font-size:28px;cursor:pointer;color:#333" onclick="setHeartRating(5)">♥</span>
+            </div>
+            <div style="font-size:12px;color:#888" id="ratingText">pretty good</div>
+          </div>
+          <div style="padding:14px 16px;border-bottom:0.5px solid #222">
+            <div style="font-size:10px;font-weight:600;color:#555;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:8px">add photo or video</div>
+            <div id="photoArea" style="display:flex;gap:8px;align-items:center">
+              <div id="photoBtn" style="width:80px;height:80px;background:#1a1a1a;border-radius:12px;border:1.5px dashed #333;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:5px" onclick="requestPhotoAccess()">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span style="font-size:9px;color:#555">add</span>
+              </div>
+              <div id="selectedPhoto" style="display:none;width:80px;height:80px;background:#1a1a1a;border-radius:12px;position:relative;display:none;align-items:center;justify-content:center">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div onclick="removePhoto()" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:#333;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Permission dialog overlay -->
+          <div id="photoPermDialog" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:flex-end;justify-content:center">
+            <div style="background:#1c1c1e;border-radius:14px 14px 0 0;width:100%;padding:20px 20px 32px">
+              <div style="width:48px;height:48px;background:#1a1a1a;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#378ADD" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </div>
+              <div style="font-size:15px;font-weight:700;color:#fff;text-align:center;margin-bottom:6px">Allow "Toofood" to access your photos?</div>
+              <div style="font-size:12px;color:#888;text-align:center;line-height:1.5;margin-bottom:20px">Toofood needs access to your photo library so you can add photos to your reviews.</div>
+              <button onclick="allowPhotos()" style="width:100%;padding:14px;background:#378ADD;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px">Allow Access</button>
+              <button onclick="denyPhotos()" style="width:100%;padding:14px;background:#2c2c2e;border:none;border-radius:12px;color:#fff;font-size:15px;cursor:pointer;margin-bottom:10px">Don't Allow</button>
+              <button onclick="denyPhotos()" style="width:100%;padding:8px;background:transparent;border:none;color:#888;font-size:13px;cursor:pointer">cancel</button>
+            </div>
+          </div>
+
+          <!-- Photo picker overlay -->
+          <div id="photoPickerDialog" style="display:none;position:absolute;inset:0;background:#000;z-index:200;flex-direction:column">
+            <div style="padding:56px 16px 12px;display:flex;align-items:center;justify-content:space-between;background:#000;border-bottom:0.5px solid #222">
+              <span onclick="closePhotoPicker()" style="font-size:13px;color:#888;cursor:pointer">cancel</span>
+              <span style="font-size:15px;font-weight:700;color:#fff">recents</span>
+              <span style="font-size:13px;color:#378ADD;cursor:pointer;font-weight:600" onclick="selectPhoto()">done</span>
+            </div>
+            <div style="flex:1;overflow-y:auto;background:#000;scrollbar-width:none;-ms-overflow-style:none">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px" id="photoGrid">
+                <div onclick="selectPhotoItem(this)" style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div onclick="selectPhotoItem(this)" style="aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div onclick="selectPhotoItem(this)" style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div onclick="selectPhotoItem(this)" style="aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div onclick="selectPhotoItem(this)" style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div onclick="selectPhotoItem(this)" style="aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div onclick="selectPhotoItem(this)" style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div onclick="selectPhotoItem(this)" style="aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+                <div onclick="selectPhotoItem(this)" style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:14px 16px;border-bottom:0.5px solid #222">
+            <div style="font-size:10px;font-weight:600;color:#555;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:8px">write your review</div>
+            <textarea style="width:100%;border:none;background:transparent;font-size:13px;color:#fff;resize:none;outline:none;font-family:-apple-system,sans-serif;line-height:1.6;min-height:80px" placeholder="what did you love? what should people order?..." id="rfText" oninput="let c=this.value.length;document.getElementById('rfCount').textContent=c+' / 280'"></textarea>
+            <div style="font-size:10px;color:#444;text-align:right" id="rfCount">0 / 280</div>
+          </div>
+          <div style="padding:14px 16px;border-bottom:0.5px solid #222">
+            <div style="font-size:10px;font-weight:600;color:#555;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:8px">tags</div>
+            <div class="tags-wrap" id="tagsWrap">
+              <div class="tag on" onclick="this.classList.toggle('on')">must try</div>
+              <div class="tag" onclick="this.classList.toggle('on')">hidden gem</div>
+              <div class="tag" onclick="this.classList.toggle('on')">great value</div>
+              <div class="tag" onclick="this.classList.toggle('on')">date spot</div>
+              <div class="tag" onclick="this.classList.toggle('on')">late night</div>
+              <div class="tag" id="otherTag" onclick="toggleOtherInput()" style="display:flex;align-items:center;gap:4px">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>other
+              </div>
+            </div>
+            <div id="otherInputWrap" style="display:none;margin-top:8px">
+              <input id="otherInput" type="text" placeholder="type your own tag..." maxlength="20"
+                style="background:#1a1a1a;border:0.5px solid #333;border-radius:20px;padding:6px 12px;font-size:12px;color:#fff;outline:none;width:100%"
+                onkeydown="if(event.key==='Enter'&&this.value.trim()){addCustomTag(this.value.trim());this.value='';}"
+              />
+              <div style="font-size:10px;color:#555;margin-top:4px">press enter to add</div>
+            </div>
+          </div>
+          <button style="margin:16px;width:calc(100% - 32px);padding:14px;background:#378ADD;border:none;border-radius:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer" onclick="goTo('feed')">post review</button>
+        </div>
+      </div>
+
+      <!-- ══ RESTAURANT SCREEN ══ -->
+      <div class="screen" id="restaurant">
+        <div class="rest-hero">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <div class="rest-hero-btns">
+            <div class="rest-hero-btn" onclick="goBack()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></div>
+            <div class="rest-hero-btn" id="restSaveBtn" onclick="toggleRestSave()"><svg width="13" height="13" viewBox="0 0 24 24"><path id="restSavePath" d="M19 21L12 16L5 21V5C5 4.47 5.21 3.96 5.59 3.59C5.96 3.21 6.47 3 7 3H17C17.53 3 18.04 3.21 18.41 3.59C18.79 3.96 19 4.47 19 5V21Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></div>
+          </div>
+          <div class="photo-count">84 photos</div>
+        </div>
+        <div class="rest-scroll">
+          <div class="rest-info">
+            <div class="rest-name-row"><div class="rest-name">Kedai Makan</div><div class="open-badge">open now</div></div>
+            <div class="rest-meta">Malaysian · Capitol Hill · $$</div>
+            <div class="rest-rating"><span class="rest-stars">★★★★★</span><span class="rest-rating-num">4.9</span><span class="rest-rating-count">342 toofood reviews</span></div>
+            <div class="rest-pills">
+              <div class="rest-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>11am–9pm</div>
+              <div class="rest-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>0.4 mi</div>
+              <div class="rest-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>2.1k likes</div>
+            </div>
+            <div class="rest-actions">
+              <button class="r-act-btn r-act-primary" onclick="goTo('reviewform')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>write review</button>
+              <button class="r-act-btn r-act-secondary"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>directions</button>
+              <button class="r-act-btn r-act-secondary"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>share</button>
+            </div>
+          </div>
+          <div class="rest-divider"></div>
+          <div class="rest-section-head"><div class="rest-section-title">photos</div><div class="see-all">see all 84</div></div>
+          <div class="photo-strip">
+            <div class="photo-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="photo-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="photo-cell" style="background:#222"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div class="photo-cell"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          </div>
+          <div class="rest-divider"></div>
+          <div class="rest-section-head"><div class="rest-section-title">top reviews</div><div class="see-all" onclick="goTo('userviewer')">see all 342</div></div>
+          <div class="rev-card">
+            <div class="rev-hdr"><div class="rev-av" style="background:#9FE1CB;color:#085041">JK</div><div><div class="rev-nm">jenny_eats</div></div><div class="rev-tm">2h ago</div></div>
+            <div class="rev-st">★★★★★</div>
+            <div class="rev-tx">Malaysian fried chicken is unreal. Crispy, spicy, curry rice is perfect.</div>
+            <div class="rev-img"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          </div>
+          <button class="write-rev-btn" onclick="goTo('reviewform')">+ write your review</button>
+          <div class="rest-divider"></div>
+          <div class="rest-section-head" style="margin-bottom:4px"><div class="rest-section-title">info</div></div>
+          <div class="rest-info-section">
+            <div class="rest-info-row"><div class="rest-info-label">address</div><div class="rest-info-val">1535 11th Ave, Seattle</div></div>
+            <div class="rest-info-row"><div class="rest-info-label">hours</div><div class="rest-info-val">11am – 9pm daily</div></div>
+            <div class="rest-info-row"><div class="rest-info-label">price</div><div class="rest-info-val">$$</div></div>
+            <div class="rest-info-row"><div class="rest-info-label">cuisine</div><div class="rest-info-val">Malaysian</div></div>
+          </div>
+        </div>
+        <nav class="bottom-nav">
+          <div class="nav-item" onclick="goTo('feed')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>feed</div>
+          <div class="nav-item" onclick="goTo('search')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>explore</div>
+          <div class="nav-item" onclick="goTo('camera')"><div class="post-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+          <div class="nav-item" onclick="goTo('messages')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>messages</div>
+          <div class="nav-item" onclick="goTo('henrypost')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>profile</div>
+        </nav>
+      </div>
+
+      </div>
+
+      <!-- ══ USER VIEWER SCREEN ══ -->
+      <div class="screen" id="userviewer" style="background:#000;flex-direction:column;overflow:hidden">
+        <div style="padding:56px 16px 10px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid #222;flex-shrink:0;background:#000">
+          <div onclick="goTo('search')" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></div>
+          <div style="font-size:15px;font-weight:700;color:#fff" id="viewerUsername">jenny_eats</div>
+          <div style="margin-left:auto;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div>
+        </div>
+        <div style="flex:1;overflow-y:auto;overflow-x:hidden;background:#000;scrollbar-width:none;-ms-overflow-style:none" id="viewerScroll"><style>#viewerScroll::-webkit-scrollbar{display:none}</style>
+          <div style="padding:14px 16px 10px;display:flex;align-items:center;gap:16px">
+            <div id="viewerPic" style="width:72px;height:72px;border-radius:50%;background:#9FE1CB;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#085041;border:2.5px solid #D85A30;flex-shrink:0">JK</div>
+            <div style="display:flex;flex:1">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><div style="font-size:16px;font-weight:700;color:#fff" id="viewerReviews">32</div><div style="font-size:11px;color:#666">reviews</div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><div style="font-size:16px;font-weight:700;color:#fff" id="viewerFollowers">12.4k</div><div style="font-size:11px;color:#666">followers</div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><div style="font-size:16px;font-weight:700;color:#fff" id="viewerFollowing">284</div><div style="font-size:11px;color:#666">following</div></div>
+            </div>
+          </div>
+          <div style="padding:0 16px 12px">
+            <div id="viewerName" style="font-size:13px;font-weight:700;color:#fff;margin-bottom:8px">Jenny K · Seattle food explorer</div>
+            <div id="viewerBio" style="font-size:12px;color:#888;line-height:1.5;margin-bottom:0">Finding the best hidden gems in Seattle. Malaysian food obsessed.</div>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 16px 12px">
+            <button onclick="toggleFollowBtn(this)" style="flex:1;padding:8px 0;background:#D85A30;border:none;border-radius:10px;font-size:13px;font-weight:600;color:#fff;cursor:pointer" id="followBtn">follow</button>
+            <button onclick="goTo('chat')" style="flex:1;padding:8px 0;background:#1a1a1a;border:none;border-radius:10px;font-size:13px;font-weight:600;color:#fff;cursor:pointer">message</button>
+          </div>
+          <div style="border-top:0.5px solid #222;display:flex;margin-bottom:0;background:#000">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:10px 0;border-bottom:2px solid #fff;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+          </div>
+          <div id="viewerGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:80px;grid-auto-rows:calc((100vw / 3) - 2px)">
+            <div style="background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="openUserFeed(0)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;grid-row:span 2" onclick="openUserFeed(1)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="openUserFeed(2)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="openUserFeed(3)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="openUserFeed(4)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;grid-row:span 2" onclick="openUserFeed(5)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="openUserFeed(6)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="openUserFeed(7)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          </div>
+        </div>
+        <nav class="bottom-nav">
+          <div class="nav-item" onclick="goTo('feed')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>feed</div>
+          <div class="nav-item active" onclick="goTo('search')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>explore</div>
+          <div class="nav-item" onclick="goTo('camera')"><div class="post-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+          <div class="nav-item" onclick="goTo('messages')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>messages</div>
+          <div class="nav-item" onclick="goTo('henrypost')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>profile</div>
+        </nav>
+      </div>
+
+      <!-- ══ HENRY POST VIEWER ══ -->
+      <div class="screen" id="henrypost" style="background:#000;flex-direction:column;overflow:hidden">
+        <div style="flex:1;overflow-y:auto;background:#000;scrollbar-width:none;-ms-overflow-style:none">
+          <div style="padding:56px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid #222;background:#000">
+            <div style="font-size:16px;font-weight:700;color:#fff">henry_eats</div>
+            <div style="cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div>
+          </div>
+          <div style="padding:14px 16px 10px;display:flex;align-items:center;gap:16px">
+            <div style="width:72px;height:72px;border-radius:50%;background:#9FE1CB;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#085041;border:2.5px solid #D85A30;flex-shrink:0">HE</div>
+            <div style="display:flex;flex:1">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><div style="font-size:16px;font-weight:700;color:#fff">48</div><div style="font-size:11px;color:#666">reviews</div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><div style="font-size:16px;font-weight:700;color:#fff">2.4k</div><div style="font-size:11px;color:#666">followers</div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><div style="font-size:16px;font-weight:700;color:#fff">312</div><div style="font-size:11px;color:#666">following</div></div>
+            </div>
+          </div>
+          <div style="padding:0 16px 10px">
+            <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:3px">Henry · Seattle food explorer</div>
+            <div style="font-size:12px;color:#888;line-height:1.5;margin-bottom:5px">Finding the best spots in Seattle. Thai food specialist. Honest reviews only.</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#666"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Seattle, WA</div>
+          </div>
+          <div style="display:flex;gap:8px;padding:0 16px 12px">
+            <button style="flex:1;padding:8px 0;background:#1a1a1a;border:1px solid #333;border-radius:10px;font-size:13px;font-weight:600;color:#fff;cursor:pointer">edit profile</button>
+          </div>
+          <div style="display:flex;gap:10px;padding:0 16px 12px;overflow-x:auto">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;cursor:pointer">
+              <div style="width:52px;height:52px;border-radius:50%;border:1.5px dashed #333;display:flex;align-items:center;justify-content:center;background:#111"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+              <div style="font-size:10px;color:#666">new</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;cursor:pointer">
+              <div style="width:52px;height:52px;border-radius:50%;border:1.5px solid #333;display:flex;align-items:center;justify-content:center;background:#111"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+              <div style="font-size:10px;color:#666">thai spots</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;cursor:pointer">
+              <div style="width:52px;height:52px;border-radius:50%;border:1.5px solid #333;display:flex;align-items:center;justify-content:center;background:#111"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+              <div style="font-size:10px;color:#666">brunch</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;cursor:pointer">
+              <div style="width:52px;height:52px;border-radius:50%;border:1.5px solid #333;display:flex;align-items:center;justify-content:center;background:#111"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+              <div style="font-size:10px;color:#666">hidden gems</div>
+            </div>
+          </div>
+          <div style="border-top:0.5px solid #222;display:flex;margin-bottom:0;background:#000" id="hpTabs">
+            <div id="hpt1" onclick="switchHPTab('grid')" style="flex:1;display:flex;align-items:center;justify-content:center;padding:10px 0;border-bottom:2px solid #fff;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+            <div id="hpt2" onclick="switchHPTab('saved')" style="flex:1;display:flex;align-items:center;justify-content:center;padding:10px 0;opacity:0.3;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+            <div id="hpt3" onclick="switchHPTab('liked')" style="flex:1;display:flex;align-items:center;justify-content:center;padding:10px 0;opacity:0.3;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+          </div>
+
+          <!-- Posts grid -->
+          <div id="hpGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:80px">
+            <div style="background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;grid-row:span 2" onclick="goTo('restaurant')"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="goTo('restaurant')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="goTo('restaurant')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="goTo('restaurant')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="goTo('restaurant')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;grid-row:span 2" onclick="goTo('restaurant')"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="goTo('restaurant')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+            <div style="aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="goTo('restaurant')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          </div>
+
+          <!-- Saved spots (pin) -->
+          <div id="hpSaved" style="display:none;padding:16px;margin-bottom:80px">
+            <div style="font-size:12px;font-weight:600;color:#555;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:12px">saved spots</div>
+            <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">
+              <div style="flex-shrink:0;width:100px;cursor:pointer" onclick="goTo('restaurant')">
+                <div style="width:100px;height:75px;background:#1a1a1a;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+                <div style="font-size:11px;font-weight:600;color:#fff">Kedai Makan</div>
+                <div style="font-size:10px;color:#378ADD">★★★★★</div>
+              </div>
+              <div style="flex-shrink:0;width:100px;cursor:pointer" onclick="goTo('restaurant')">
+                <div style="width:100px;height:75px;background:#222;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+                <div style="font-size:11px;font-weight:600;color:#fff">Kamonegi</div>
+                <div style="font-size:10px;color:#378ADD">★★★★★</div>
+              </div>
+              <div style="flex-shrink:0;width:100px;cursor:pointer" onclick="goTo('restaurant')">
+                <div style="width:100px;height:75px;background:#1a1a1a;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:5px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+                <div style="font-size:11px;font-weight:600;color:#fff">Spinasse</div>
+                <div style="font-size:10px;color:#378ADD">★★★★★</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Liked posts -->
+          <div id="hpLiked" style="display:none;margin-bottom:80px">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px">
+              <div style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative" onclick="goTo('restaurant')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div style="position:absolute;bottom:4px;left:4px;display:flex;align-items:center;gap:2px"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff3b5c" stroke="#ff3b5c" stroke-width="1"><path d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z"/></svg><span style="font-size:9px;color:#fff">2.1k</span></div>
+              </div>
+              <div style="aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative" onclick="goTo('restaurant')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div style="position:absolute;bottom:4px;left:4px;display:flex;align-items:center;gap:2px"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff3b5c" stroke="#ff3b5c" stroke-width="1"><path d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z"/></svg><span style="font-size:9px;color:#fff">890</span></div>
+              </div>
+              <div style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative" onclick="goTo('restaurant')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div style="position:absolute;bottom:4px;left:4px;display:flex;align-items:center;gap:2px"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff3b5c" stroke="#ff3b5c" stroke-width="1"><path d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z"/></svg><span style="font-size:9px;color:#fff">312</span></div>
+              </div>
+              <div style="aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative" onclick="goTo('restaurant')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div style="position:absolute;bottom:4px;left:4px;display:flex;align-items:center;gap:2px"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff3b5c" stroke="#ff3b5c" stroke-width="1"><path d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z"/></svg><span style="font-size:9px;color:#fff">178</span></div>
+              </div>
+              <div style="aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative" onclick="goTo('restaurant')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div style="position:absolute;bottom:4px;left:4px;display:flex;align-items:center;gap:2px"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff3b5c" stroke="#ff3b5c" stroke-width="1"><path d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z"/></svg><span style="font-size:9px;color:#fff">401</span></div>
+              </div>
+              <div style="aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative" onclick="goTo('restaurant')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <div style="position:absolute;bottom:4px;left:4px;display:flex;align-items:center;gap:2px"><svg width="10" height="10" viewBox="0 0 24 24" fill="#ff3b5c" stroke="#ff3b5c" stroke-width="1"><path d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z"/></svg><span style="font-size:9px;color:#fff">93</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <nav class="bottom-nav">
+          <div class="nav-item" onclick="goTo('feed')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>feed</div>
+          <div class="nav-item" onclick="goTo('search')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>explore</div>
+          <div class="nav-item" onclick="goTo('camera')"><div class="post-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+          <div class="nav-item" onclick="goTo('messages')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>messages</div>
+          <div class="nav-item active" onclick="goTo('henrypost')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>profile</div>
+        </nav>
+      </div>
+
+      <div class="screen" id="userfeed" style="background:#000;flex-direction:column">
+        <div style="padding:56px 16px 10px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid #222;flex-shrink:0;background:#000">
+          <div onclick="goTo('userviewer')" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></div>
+          <div id="postViewerUsername" style="font-size:15px;font-weight:700;color:#fff">jenny_eats</div>
+          <div style="margin-left:auto;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div>
+        </div>
+        <div style="flex:1;overflow-y:auto;overflow-x:hidden;background:#000;scrollbar-width:none;-ms-overflow-style:none" id="postViewerScroll">
+          <style>#postViewerScroll::-webkit-scrollbar{display:none}</style>
+
+          <!-- Post 1 -->
+          <div style="border-bottom:0.5px solid #222;padding-bottom:14px;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px">
+              <div id="postAv1" style="width:32px;height:32px;border-radius:50%;background:#9FE1CB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#085041;flex-shrink:0">JK</div>
+              <div>
+                <div id="postUser1" style="font-size:13px;font-weight:700;color:#fff">jenny_eats</div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#555;cursor:pointer" onclick="goTo('restaurant')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Kedai Makan · Capitol Hill</div>
+              </div>
+              <div style="margin-left:auto;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div>
+            </div>
+            <div style="width:100%;aspect-ratio:1;background:#1a1a1a;display:flex;align-items:center;justify-content:center">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div style="padding:10px 14px 0">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="display:flex;gap:18px;align-items:center">
+                  <div onclick="togglePostHeart(this,'ph1')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px">
+                    <svg width="20" height="20" viewBox="0 0 24 24"><path id="ph1" d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+                    <span style="font-size:10px;color:#888">like</span>
+                  </div>
+                  <div style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M21 15C21 15.5 20.79 16.04 20.41 16.41C20.04 16.79 19.53 17 19 17H7L3 21V5C3 4.47 3.21 3.96 3.59 3.59C3.96 3.21 4.47 3 5 3H19C19.53 3 20.04 3.21 20.41 3.59C20.79 3.96 21 4.47 21 5V15Z"/></svg>
+                    <span style="font-size:10px;color:#888">comment</span>
+                  </div>
+                  <div style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    <span style="font-size:10px;color:#888">share</span>
+                  </div>
+                </div>
+                <div onclick="togglePostSave(this,'ps1')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px">
+                  <svg width="20" height="20" viewBox="0 0 24 24"><path id="ps1" d="M19 21L12 16L5 21V5C5 4.47 5.21 3.96 5.59 3.59C5.96 3.21 6.47 3 7 3H17C17.53 3 18.04 3.21 18.41 3.59C18.79 3.96 19 4.47 19 5V21Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+                  <span style="font-size:10px;color:#888">save</span>
+                </div>
+              </div>
+              <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:5px">2,100 likes</div>
+              <div style="font-size:12px;color:#fff;line-height:1.5;margin-bottom:3px"><span style="font-weight:700" id="pu1">jenny_eats</span> Malaysian fried chicken is unreal.</div>
+              <div style="font-size:11px;color:#555;margin-bottom:5px">#seattlefood #malaysianeats #toofood</div>
+              <div style="color:#f5c518;font-size:12px;margin-bottom:5px">★★★★★</div>
+              <div style="font-size:11px;color:#555;cursor:pointer">view all 84 comments</div>
+              <div style="font-size:10px;color:#444;margin-top:4px">2 hours ago</div>
+            </div>
+          </div>
+
+          <!-- Post 2 -->
+          <div style="border-bottom:0.5px solid #222;padding-bottom:14px;margin-bottom:80px">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 14px">
+              <div id="postAv2" style="width:32px;height:32px;border-radius:50%;background:#9FE1CB;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#085041;flex-shrink:0">JK</div>
+              <div>
+                <div id="postUser2" style="font-size:13px;font-weight:700;color:#fff">jenny_eats</div>
+                <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#555;cursor:pointer" onclick="goTo('restaurant')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Kamonegi · Fremont</div>
+              </div>
+              <div style="margin-left:auto;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div>
+            </div>
+            <div style="width:100%;aspect-ratio:1;background:#222;display:flex;align-items:center;justify-content:center">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div style="padding:10px 14px 0">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="display:flex;gap:18px;align-items:center">
+                  <div onclick="togglePostHeart(this,'ph2')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px">
+                    <svg width="20" height="20" viewBox="0 0 24 24"><path id="ph2" d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+                    <span style="font-size:10px;color:#888">like</span>
+                  </div>
+                  <div style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M21 15C21 15.5 20.79 16.04 20.41 16.41C20.04 16.79 19.53 17 19 17H7L3 21V5C3 4.47 3.21 3.96 3.59 3.59C3.96 3.21 4.47 3 5 3H19C19.53 3 20.04 3.21 20.41 3.59C20.79 3.96 21 4.47 21 5V15Z"/></svg>
+                    <span style="font-size:10px;color:#888">comment</span>
+                  </div>
+                  <div style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    <span style="font-size:10px;color:#888">share</span>
+                  </div>
+                </div>
+                <div onclick="togglePostSave(this,'ps2')" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px">
+                  <svg width="20" height="20" viewBox="0 0 24 24"><path id="ps2" d="M19 21L12 16L5 21V5C5 4.47 5.21 3.96 5.59 3.59C5.96 3.21 6.47 3 7 3H17C17.53 3 18.04 3.21 18.41 3.59C18.79 3.96 19 4.47 19 5V21Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+                  <span style="font-size:10px;color:#888">save</span>
+                </div>
+              </div>
+              <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:5px">450 likes</div>
+              <div style="font-size:12px;color:#fff;line-height:1.5;margin-bottom:3px"><span style="font-weight:700" id="pu2">jenny_eats</span> Handmade soba that hits different.</div>
+              <div style="font-size:11px;color:#555;margin-bottom:5px">#seattlefood #soba #toofood</div>
+              <div style="color:#f5c518;font-size:12px;margin-bottom:5px">★★★★★</div>
+              <div style="font-size:11px;color:#555;cursor:pointer">view all 22 comments</div>
+              <div style="font-size:10px;color:#444;margin-top:4px">5 hours ago</div>
+            </div>
+          </div>
+
+        </div>
+        <nav class="bottom-nav">
+          <div class="nav-item" onclick="goTo('feed')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>feed</div>
+          <div class="nav-item active" onclick="goTo('search')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>explore</div>
+          <div class="nav-item" onclick="goTo('camera')"><div class="post-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div></div>
+          <div class="nav-item" onclick="goTo('messages')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>messages</div>
+          <div class="nav-item" onclick="goTo('henrypost')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>profile</div>
+        </nav>
+      </div>
+
+      <div class="home-indicator" id="homeIndicator" style="background:rgba(255,255,255,0.3)"></div>
+    </div>
+  </div>
+  <div class="phone-label">toofood · <span>full prototype</span> · tap anything to navigate</div>
+
+<script>
+const darkScreens = ['feed','camera','userviewer','henrypost','userfeed','messages','chat','restaurant','reviewform'];
+let prevScreen = 'feed';
+
+function openUserFeed(idx) {
+  const u = users[currentUser];
+  document.getElementById('postViewerUsername').textContent = u.username;
+  ['postAv1','postAv2'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = u.initials;
+    el.style.background = u.bg;
+    el.style.color = u.color;
+  });
+  ['postUser1','postUser2','pu1','pu2'].forEach(id => {
+    document.getElementById(id).textContent = u.username;
+  });
+  const scroll = document.getElementById('postViewerScroll');
+  scroll.scrollTop = idx > 0 ? scroll.scrollHeight : 0;
+  goTo('userfeed');
+}
+
+const users = [
+  {id:'u1',username:'jenny_eats',initials:'JK',bg:'#9FE1CB',color:'#085041',name:'Jenny K · Seattle food explorer',bio:'Finding the best hidden gems in Seattle. Malaysian food obsessed.'},
+  {id:'u2',username:'marcus_bites',initials:'MR',bg:'#CECBF6',color:'#3C3489',name:'Marcus R · PNW food adventurer',bio:'Banh mi connoisseur. International District is my second home.'},
+  {id:'u3',username:'alicia_nomnom',initials:'AL',bg:'#FAC775',color:'#633806',name:'Alicia L · Brunch queen',bio:'If there\'s a line, it\'s worth it. Soba and ramen fanatic.'},
+  {id:'u4',username:'seattle_kai',initials:'SK',bg:'#F5C4B3',color:'#712B13',name:'Kai S · Capitol Hill local',bio:'Born and raised in Seattle. I know every spot.'},
+  {id:'u5',username:'tasteynow',initials:'TN',bg:'#EAF3DE',color:'#3B6D11',name:'Taylor N · Ramen obsessed',bio:'Chasing the perfect broth. Fremont and Ballard explorer.'},
+];
+let currentUser = 0;
+
+function openUserProfile(idx) {
+  currentUser = idx;
+  const u = users[idx];
+  document.getElementById('viewerUsername').textContent = u.username;
+  document.getElementById('viewerPic').style.background = u.bg;
+  document.getElementById('viewerPic').style.color = u.color;
+  document.getElementById('viewerPic').textContent = u.initials;
+  document.getElementById('viewerName').textContent = u.name;
+  document.getElementById('viewerBio').textContent = u.bio;
+  document.getElementById('followBtn').textContent = 'follow';
+  document.getElementById('followBtn').style.background = '#D85A30';
+  document.getElementById('followBtn').style.color = '#fff';
+  document.getElementById('viewerScroll').scrollTop = 0;
+  goTo('userviewer');
+}
+
+function togglePostHeart(el, pathId) {
+  const path = document.getElementById(pathId);
+  const liked = path.getAttribute('data-liked') === '1';
+  if(liked){ path.style.fill='none'; path.style.stroke='#fff'; path.setAttribute('data-liked','0'); }
+  else{ path.style.fill='#ff3b5c'; path.style.stroke='#ff3b5c'; path.setAttribute('data-liked','1'); }
+}
+function togglePostSave(el, pathId) {
+  const path = document.getElementById(pathId);
+  const saved = path.getAttribute('data-saved') === '1';
+  if(saved){ path.style.fill='none'; path.style.stroke='#fff'; path.setAttribute('data-saved','0'); }
+  else{ path.style.fill='#facc15'; path.style.stroke='#facc15'; path.setAttribute('data-saved','1'); }
+}
+
+function setHeartRating(val) {
+  const labels = {1:'not good',2:'okay',3:'pretty good',4:'great',5:'amazing!'};
+  document.querySelectorAll('#rfStars span').forEach((s,i) => {
+    s.style.color = i < val ? '#ff3b5c' : '#333';
+  });
+  document.getElementById('ratingText').textContent = labels[val] || '';
+}
+function toggleOtherInput() {
+  const wrap = document.getElementById('otherInputWrap');
+  const tag = document.getElementById('otherTag');
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? 'block' : 'none';
+  tag.classList.toggle('on', open);
+  if(open) setTimeout(()=>document.getElementById('otherInput').focus(), 100);
+}
+function addCustomTag(text) {
+  const wrap = document.getElementById('tagsWrap');
+  const otherTag = document.getElementById('otherTag');
+  const tag = document.createElement('div');
+  tag.className = 'tag on';
+  tag.textContent = text;
+  tag.onclick = function(){ this.remove(); };
+  wrap.insertBefore(tag, otherTag);
+}
+
+let photoAccessGranted = false;
+let selectedPhotoEl = null;
+
+function requestPhotoAccess() {
+  if(photoAccessGranted) { openPhotoPicker(); return; }
+  const d = document.getElementById('photoPermDialog');
+  d.style.display = 'flex';
+}
+function allowPhotos() {
+  photoAccessGranted = true;
+  document.getElementById('photoPermDialog').style.display = 'none';
+  openPhotoPicker();
+}
+function denyPhotos() {
+  document.getElementById('photoPermDialog').style.display = 'none';
+}
+function openPhotoPicker() {
+  document.getElementById('photoPickerDialog').style.display = 'flex';
+  selectedPhotoEl = null;
+  document.querySelectorAll('#photoGrid > div').forEach(el => {
+    el.style.outline = 'none';
+    const badge = el.querySelector('.sel-badge');
+    if(badge) badge.remove();
+  });
+}
+function closePhotoPicker() {
+  document.getElementById('photoPickerDialog').style.display = 'none';
+  selectedPhotoEl = null;
+}
+function selectPhotoItem(el) {
+  document.querySelectorAll('#photoGrid > div').forEach(d => {
+    d.style.outline = 'none';
+    const b = d.querySelector('.sel-badge');
+    if(b) b.remove();
+  });
+  selectedPhotoEl = el;
+  el.style.outline = '2.5px solid #378ADD';
+  const badge = document.createElement('div');
+  badge.className = 'sel-badge';
+  badge.style.cssText = 'position:absolute;top:4px;right:4px;width:20px;height:20px;background:#378ADD;border-radius:50%;display:flex;align-items:center;justify-content:center';
+  badge.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+  el.appendChild(badge);
+}
+function selectPhoto() {
+  if(!selectedPhotoEl) { closePhotoPicker(); return; }
+  document.getElementById('photoPickerDialog').style.display = 'none';
+  const sp = document.getElementById('selectedPhoto');
+  sp.style.display = 'flex';
+  document.getElementById('photoBtn').style.display = 'none';
+  selectedPhotoEl = null;
+}
+function removePhoto() {
+  document.getElementById('selectedPhoto').style.display = 'none';
+  document.getElementById('photoBtn').style.display = 'flex';
+}
+
+function toggleFollowBtn(btn) {
+  if(btn.textContent === 'follow'){ btn.textContent='following'; btn.style.background='#f5f5f5'; btn.style.color='#333'; }
+  else { btn.textContent='follow'; btn.style.background='#D85A30'; btn.style.color='#fff'; }
+}
+
+function searchFocus(){
+  document.getElementById('searchCancel').style.display='block';
+  document.getElementById('searchBody').style.display='none';
+}
+function searchBlur(){
+  setTimeout(()=>{
+    if(!document.getElementById('searchInput').value){
+      document.getElementById('searchCancel').style.display='none';
+      document.getElementById('searchBody').style.display='block';
+    }
+  },150);
+}
+function cancelSearch(){
+  document.getElementById('searchInput').value='';
+  document.getElementById('searchInput').blur();
+  document.getElementById('searchCancel').style.display='none';
+  document.getElementById('searchBody').style.display='block';
+}
+
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const dark = darkScreens.includes(id);
+  document.getElementById('statusBar').style.color = dark ? '#fff' : '#1a1a1a';
+  document.getElementById('homeIndicator').style.background = dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)';
+  if(id !== 'chat' && id !== 'restaurant') prevScreen = id;
+  if(id === 'feed') document.getElementById('feedScroll').scrollTop = 0;
+}
+
+function goBack() { goTo(prevScreen); }
+
+function toggleHeart(el, countId) {
+  const path = el.querySelector('.heart-path');
+  const label = document.getElementById(countId);
+  let count = parseInt(label.dataset.count);
+  const liked = path.getAttribute('data-liked') === '1';
+  if(liked){ path.style.fill='none'; path.style.stroke='#fff'; path.setAttribute('data-liked','0'); count--; }
+  else{ path.style.fill='#ff3b5c'; path.style.stroke='#ff3b5c'; path.setAttribute('data-liked','1'); count++; }
+  label.dataset.count = count;
+  label.textContent = count >= 1000 ? (count/1000).toFixed(1)+'k' : count;
+}
+
+function toggleSave(el) {
+  const path = el.querySelector('.save-path');
+  const saved = path.getAttribute('data-saved') === '1';
+  if(saved){ path.style.fill='none'; path.style.stroke='#fff'; path.setAttribute('data-saved','0'); }
+  else{ path.style.fill='#facc15'; path.style.stroke='#facc15'; path.setAttribute('data-saved','1'); }
+}
+
+function toggleRestSave() {
+  const p = document.getElementById('restSavePath');
+  const saved = p.getAttribute('data-saved') === '1';
+  if(saved){ p.style.fill='none'; p.style.stroke='#fff'; p.setAttribute('data-saved','0'); }
+  else{ p.style.fill='#facc15'; p.style.stroke='#facc15'; p.setAttribute('data-saved','1'); }
+}
+
+function switchHPTab(tab) {
+  document.getElementById('hpGrid').style.display = tab==='grid' ? 'grid' : 'none';
+  document.getElementById('hpSaved').style.display = tab==='saved' ? 'block' : 'none';
+  document.getElementById('hpLiked').style.display = tab==='liked' ? 'block' : 'none';
+  ['hpt1','hpt2','hpt3'].forEach((id,i) => {
+    const t = ['grid','saved','liked'][i];
+    document.getElementById(id).style.opacity = tab===t ? '1' : '0.3';
+    document.getElementById(id).style.borderBottom = tab===t ? '2px solid #fff' : '2px solid transparent';
+  });
+}
+
+function switchPTab(tab) {
+  document.getElementById('pt1').className = 'ptab' + (tab==='grid'?' active':'');
+  document.getElementById('pt2').className = 'ptab' + (tab==='saved'?' active':'');
+  document.getElementById('pt3').className = 'ptab' + (tab==='liked'?' active':'');
+}
+
+function setCMode(el) {
+  document.querySelectorAll('.cmode').forEach(m => m.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  const msgs = document.getElementById('chatMsgs');
+  const wrap = document.createElement('div');
+  wrap.style.alignSelf = 'flex-end';
+  const now = new Date();
+  const time = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+  wrap.innerHTML = `<div class="msg me">${text}</div><div class="msg-time r">${time}</div>`;
+  msgs.appendChild(wrap);
+  msgs.scrollTop = msgs.scrollHeight;
+  input.value = '';
+}
+
+document.getElementById('chatInput').addEventListener('keydown', e => { if(e.key==='Enter') sendMsg(); });
+
+let tapTimers = {};
+document.querySelectorAll('.review-screen').forEach((screen, i) => {
+  screen.addEventListener('click', function(e) {
+    if(e.target.closest('.r-action') || e.target.closest('.follow-pill') || e.target.closest('.feed-tab') || e.target.closest('.place-pill') || e.target.closest('.bottom-nav')) return;
+    const key = 's'+i;
+    if(tapTimers[key]){ clearTimeout(tapTimers[key]); tapTimers[key]=null; likeScreen(screen,i); }
+    else{ tapTimers[key]=setTimeout(()=>{ tapTimers[key]=null; },300); }
+  });
+});
+
+function likeScreen(screen, i) {
+  const countId = 'lc'+(i+1);
+  const label = document.getElementById(countId);
+  if(!label) return;
+  const path = screen.querySelector('.heart-path');
+  if(path && path.getAttribute('data-liked')==='1') return;
+  if(path){ path.style.fill='#ff3b5c'; path.style.stroke='#ff3b5c'; path.setAttribute('data-liked','1'); }
+  if(label){ let c=parseInt(label.dataset.count)+1; label.dataset.count=c; label.textContent=c>=1000?(c/1000).toFixed(1)+'k':c; }
+  const heart = document.createElement('div');
+  heart.innerHTML='<svg width="80" height="80" viewBox="0 0 24 24"><path d="M12 21C12 21 3 14.5 3 8.5C3 5.42 5.42 3 8.5 3C10.24 3 11.91 3.81 13 5.08C14.09 3.81 15.76 3 17.5 3C20.58 3 23 5.42 23 8.5C23 14.5 14 21 12 21Z" fill="#ff3b5c" stroke="#ff3b5c" stroke-width="2"/></svg>';
+  heart.style.cssText='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(0);z-index:50;pointer-events:none;transition:transform 0.15s ease-out,opacity 0.3s ease 0.2s;opacity:1';
+  screen.appendChild(heart);
+  requestAnimationFrame(()=>{ heart.style.transform='translate(-50%,-50%) scale(1.3)'; setTimeout(()=>{ heart.style.transform='translate(-50%,-50%) scale(1)'; setTimeout(()=>{ heart.style.opacity='0'; setTimeout(()=>heart.remove(),300); },200); },150); });
+}
+
+document.querySelectorAll('#rfStars .star').forEach(s => {
+  s.addEventListener('click', function() {
+    const v = parseInt(this.dataset.v);
+    document.querySelectorAll('#rfStars .star').forEach((st,i) => st.classList.toggle('on', i<v));
+  });
+});
+</script>
+</body>
+</html>
